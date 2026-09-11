@@ -10,9 +10,6 @@
 	<a href="https://github.com/writefreely/writefreely/releases/latest">
 		<img src="https://img.shields.io/github/downloads/writefreely/writefreely/total.svg" />
 	</a>
-	<a href="https://goreportcard.com/report/github.com/writefreely/writefreely">
-		<img src="https://goreportcard.com/badge/github.com/writefreely/writefreely" alt="Go Report Card" />
-	</a>
 	<a href="https://ghcr.io/writefreely/writefreely">
 		<img src="https://img.shields.io/badge/docker-%230db7ed.svg?logo=docker&logoColor=white" />
 	</a>
@@ -60,7 +57,7 @@ The quickest way to deploy WriteFreely is with [Write.as](https://write.as/write
 
 ## Quick start
 
-WriteFreely deploys as a static binary on any platform and architecture that Go supports. Just use our built-in SQLite support, or add a MySQL database, and you'll be up and running!
+WriteFreely deploys as a static binary on any platform and architecture that Go supports. Just use our built-in SQLite support, or add a MySQL or MariaDB database, and you'll be up and running!
 
 For common platforms, start with our [pre-built binaries](https://github.com/writefreely/writefreely/releases/) and head over to our [installation guide](https://writefreely.org/start) to get started.
 
@@ -87,4 +84,4 @@ Before contributing anything, please read our [Contributing Guide](https://githu
 
 ## License
 
-Copyright © 2018-2025 [Musing Studio LLC](https://musing.studio) and contributing authors. Licensed under the [AGPL](https://github.com/writefreely/writefreely/blob/develop/LICENSE).
+Copyright © 2018-2026 [Musing Studio LLC](https://musing.studio) and contributing authors. Licensed under the [AGPL](https://github.com/writefreely/writefreely/blob/develop/LICENSE).

@@ -15,11 +15,12 @@ package writefreely
 
 import (
 	"database/sql"
+	"regexp"
+
 	"github.com/go-sql-driver/mysql"
 	"github.com/lib/pq"
 	"github.com/mattn/go-sqlite3"
 	"github.com/writeas/web-core/log"
-	"regexp"
 )
 
 func init() {

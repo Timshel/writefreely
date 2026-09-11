@@ -11,10 +11,12 @@
 package writefreely
 
 import (
-	"github.com/writeas/web-core/log"
-	"github.com/writefreely/writefreely/key"
+	"fmt"
 	"os"
 	"path/filepath"
+
+	"github.com/writeas/web-core/log"
+	"github.com/writefreely/writefreely/key"
 )
 
 const (
@@ -33,6 +35,10 @@ func InitKeys(apper Apper) error {
 	log.Info("Loading encryption keys...")
 	err := apper.LoadKeys()
 	if err != nil {
+		if os.IsNotExist(err) {
+			keysPath := filepath.Join(apper.App().cfg.Server.KeysParentDir, keysDir)
+			return fmt.Errorf("Missing encryption keys at %s. To create, run:\n  writefreely keys generate", keysPath)
+		}
 		return err
 	}
 	return nil

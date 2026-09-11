@@ -15,7 +15,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"github.com/writefreely/writefreely/mailer"
 	"html/template"
 	"net/http"
 	"strings"
@@ -28,6 +27,7 @@ import (
 	"github.com/writeas/web-core/data"
 	"github.com/writeas/web-core/log"
 	"github.com/writefreely/writefreely/key"
+	"github.com/writefreely/writefreely/mailer"
 	"github.com/writefreely/writefreely/spam"
 )
 
@@ -322,7 +322,7 @@ func emailPost(app *App, p *PublicPost, collID int64) error {
 
 	// Do some shortcode replacement.
 	// Since the user is receiving this email, we can assume they're subscribed via email.
-	p.Content = strings.Replace(p.Content, "<!--emailsub-->", `<p id="emailsub">You're subscribed to email updates.</p>`, -1)
+	p.Content = strings.Replace(p.Content, shortCodeEmailSub, `<p id="emailsub">You're subscribed to email updates.</p>`, -1)
 
 	if p.HTMLContent == template.HTML("") {
 		p.formatContent(app.cfg, false, false)
@@ -346,7 +346,7 @@ Sent to %recipient.to%. Unsubscribe: ` + p.Collection.CanonicalURL() + `email/un
 	if err != nil {
 		return err
 	}
-	m, err := mlr.NewMessage(p.Collection.DisplayTitle()+" <"+p.Collection.Alias+"@"+app.cfg.Email.Domain+">", stripmd.Strip(p.DisplayTitle()), plainMsg)
+	m, err := mlr.NewMessage(mailer.FormatAddress(p.Collection.DisplayTitle(), p.Collection.Alias+"@"+app.cfg.Email.Domain), stripmd.Strip(p.DisplayTitle()), plainMsg)
 	if err != nil {
 		return err
 	}
@@ -488,7 +488,7 @@ func sendSubConfirmEmail(app *App, c *Collection, email, subID, token string) er
 ` + c.CanonicalURL() + "email/confirm/" + subID + "?t=" + token + `
 
 If you didn't subscribe to this site or you're not sure why you're getting this email, you can delete it. You won't be subscribed or receive any future emails.`
-	m, err := mlr.NewMessage(c.DisplayTitle()+" <"+c.Alias+"@"+app.cfg.Email.Domain+">", "Confirm your subscription to "+c.DisplayTitle(), plainMsg, fmt.Sprintf("<%s>", email))
+	m, err := mlr.NewMessage(mailer.FormatAddress(c.DisplayTitle(), c.Alias+"@"+app.cfg.Email.Domain), "Confirm your subscription to "+c.DisplayTitle(), plainMsg, fmt.Sprintf("<%s>", email))
 	if err != nil {
 		return err
 	}

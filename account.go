@@ -13,8 +13,6 @@ package writefreely
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/writefreely/writefreely/mailer"
-	"github.com/writefreely/writefreely/spam"
 	"html/template"
 	"net/http"
 	"regexp"
@@ -33,7 +31,9 @@ import (
 	"github.com/writeas/web-core/log"
 	"github.com/writefreely/writefreely/author"
 	"github.com/writefreely/writefreely/config"
+	"github.com/writefreely/writefreely/mailer"
 	"github.com/writefreely/writefreely/page"
+	"github.com/writefreely/writefreely/spam"
 )
 
 type (
@@ -55,6 +55,8 @@ type (
 		CollAlias string
 	}
 )
+
+const maxPassByteLen = 72
 
 func NewUserPage(app *App, r *http.Request, u *User, title string, flashes []string) *UserPage {
 	up := &UserPage{
@@ -131,6 +133,15 @@ func signup(app *App, w http.ResponseWriter, r *http.Request) (*AuthUser, error)
 
 func signupWithRegistration(app *App, signup userRegistration, w http.ResponseWriter, r *http.Request) (*AuthUser, error) {
 	reqJSON := IsJSON(r)
+
+	// Signup checks are enforced here to keep them from being bypassed on different endpoints.
+	if app.cfg.App.DisablePasswordAuth {
+		return nil, ErrDisabledPasswordAuth
+	}
+	// Closed registration requires a valid, active invite code.
+	if err := app.canRegister(signup.InviteCode); err != nil {
+		return nil, err
+	}
 
 	// Validate required params (alias)
 	if signup.Alias == "" {
@@ -594,7 +605,11 @@ func getVerboseAuthUser(app *App, token string, u *User, verbose bool) *AuthUser
 
 func viewExportOptions(app *App, u *User, w http.ResponseWriter, r *http.Request) error {
 	// Fetch extra user data
-	p := NewUserPage(app, r, u, "Export", nil)
+	p := struct {
+		*UserPage
+	}{
+		UserPage: NewUserPage(app, r, u, "Export", nil),
+	}
 
 	showUserPage(w, "export", p)
 	return nil
@@ -862,6 +877,7 @@ func viewEditCollection(app *App, u *User, w http.ResponseWriter, r *http.Reques
 	if err != nil {
 		return err
 	}
+	c.hostName = app.cfg.App.Host
 	if c.OwnerID != u.ID {
 		return ErrCollectionNotFound
 	}
@@ -1103,6 +1119,9 @@ func handleViewSubscribers(app *App, u *User, w http.ResponseWriter, r *http.Req
 	c, err := app.db.GetCollection(vars["collection"])
 	if err != nil {
 		return err
+	}
+	if u.ID != c.OwnerID {
+		return ErrCollectionNotFound
 	}
 
 	filter := r.FormValue("filter")
@@ -1385,7 +1404,7 @@ func emailPasswordReset(app *App, toEmail, token string) error {
 	footerPara := "Didn't request this password reset? Your account is still safe, and you can safely ignore this email."
 
 	plainMsg := fmt.Sprintf("We received a request to reset your password on %s. Please click the following link to continue (or copy and paste it into your browser): %s/reset?t=%s\n\n%s", app.cfg.App.SiteName, app.cfg.App.Host, token, footerPara)
-	m, err := mlr.NewMessage(app.cfg.App.SiteName+" <noreply-password@"+app.cfg.Email.Domain+">", "Reset Your "+app.cfg.App.SiteName+" Password", plainMsg, fmt.Sprintf("<%s>", toEmail))
+	m, err := mlr.NewMessage(mailer.FormatAddress(app.cfg.App.SiteName, "noreply-password@"+app.cfg.Email.Domain), "Reset Your "+app.cfg.App.SiteName+" Password", plainMsg, fmt.Sprintf("<%s>", toEmail))
 	if err != nil {
 		return err
 	}
@@ -1437,7 +1456,7 @@ func loginViaEmail(app *App, alias, redirectTo string) error {
 	footerPara := "This link will only work once and expires in 15 minutes. Didn't ask us to log in? You can safely ignore this email."
 
 	plainMsg := fmt.Sprintf("Log in to %s here: %s/login?to=%s&with=%s\n\n%s", app.cfg.App.SiteName, app.cfg.App.Host, redirectTo, t, footerPara)
-	m, err := mlr.NewMessage(app.cfg.App.SiteName+" <noreply-login@"+app.cfg.Email.Domain+">", "Log in to "+app.cfg.App.SiteName, plainMsg, fmt.Sprintf("<%s>", toEmail))
+	m, err := mlr.NewMessage(mailer.FormatAddress(app.cfg.App.SiteName, "noreply-login@"+app.cfg.Email.Domain), "Log in to "+app.cfg.App.SiteName, plainMsg, fmt.Sprintf("<%s>", toEmail))
 	if err != nil {
 		return err
 	}
